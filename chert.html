@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chart</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@2.9.3/dist/Chart.min.css">
+  <style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+body {
+  font-family: sans-serif;
+}
+#chart-field h2 {
+  margin-bottom: 15px;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+.chart-values input {
+  width: 34px;
+}
+.chart-values p {
+  display: flex;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  justify-content: space-around;
+  background: #c9c9c9;
+}
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  /* display: none; <- Crashes Chrome on hover */
+  -webkit-appearance: none;
+  margin: 0; /* <-- Apparently some margin are still there even though it's hidden */
+}
+.buttons {
+  display: flex;
+  justify-content: center;
+  text-align: center;
+}
+.buttons div {
+  width: 33%;
+  color: #fff;
+  padding-top: 15px;
+  padding-bottom: 15px;
+}
+.buttons input[type="text"] {
+    height: 30px;
+    border-radius: 6px;
+    border: none;
+    padding-left: 15px;
+}
+.buttons input[type="button"] {
+    width: 80px;
+    height: 32px;
+    background: #fff;
+    border: none;
+    border-radius: 7px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .3s;
+}
+.buttons input[type="button"]:active {
+  transform: translateY(2px);
+  border: none;
+}
+.buttons input[type="button"]:hover {
+  background: #c9c9c9;
+}
+.button-add {
+  background: #74E868;
+}
+.button-delete {
+  background: #B52D43;
+}
+.button-delete-all {
+  background: #9D0019;
+}
+.chart-values p:first-child {
+  background: none;
+  justify-content: space-between;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+main {
+  display: flex;
+  justify-content: center;
+}
+.chart-body {
+  width: 70%;
+}
+.panel {
+  display: flex;
+  width: 30%;
+  border-left: 4px solid rgba(0,0,0,0.6);
+}
+#chart-field {
+  height: 400px;
+  overflow-y: scroll;
+}
+form {
+  
+}
+  </style>
+</head>
+<body>
+  <main>
+    <div class="chart-body">
+      <canvas id="myChart"></canvas>
+    </div>
+    <div class="panel">
+      <div id="chart-field">
+      </div>
+    </div>
+  </main>
+   <div class="buttons">
+      <div class="button-add">
+        <p>Добавить график.</p> <br>
+        <form>
+          <input autocomplete="off" placeholder="Имя графика" id="chart-name" required minlength="1" type="text"> <br><br>
+          <input autocomplete="off" placeholder="Целевая установка" id="aim-name" required minlength="1" type="text"> <br><br>
+          <input id="addChartButton" value="Добавить" type="button" >
+        </form>
+      </div>
+      <div class="button-delete">
+        <p>Введите название графика, чтобы удалить.</p> <br>
+        <form>
+          <input autocomplete="off" placeholder="Имя графика" id="chart-name-del" required minlength="1" type="text"> <br><br>
+          <input id="deleteChart" value="Удалить" type="button" >
+        </form>
+      </div>
+      <div class="button-delete-all">
+        <p>Удалить все графики.</p> <br>
+        <form>
+          <input id="deleteChartsAll" value="Удалить" type="button" >
+        </form>
+      </div>
+      
+    </div>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.3/dist/Chart.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.3/dist/Chart.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/randomcolor/0.6.1/randomColor.min.js"></script>
+  <script>
+    let ctx = document.getElementById('myChart').getContext('2d');
+    let addChartButton = document.getElementById('addChartButton');
+    let deleteChartButton = document.getElementById('deleteChart');
+    let deleteAllChartsButton = document.getElementById('deleteChartsAll');
+    let chartField = document.getElementById('chart-field');
+    let aimName = document.getElementById('aim-name');
+    let chartName = document.getElementById('chart-name');
+    let chartNameDel = document.getElementById('chart-name-del');
+    let counter = 1;
+    
+    let myRadarChart = new Chart(ctx, {
+      type: 'radar',
+      data: {
+        labels: ['Автономность', 'Приключения', 'Возбуджение', 'Удовольствие', 'Безопасность', 'Дисциплина']
+      },
+      options: {
+          scale: {
+          ticks: {
+              max: 100,
+              min: 0,
+              stepSize: 20
+          }
+        }
+      }
+    });
+    function addData(chart, data) {
+      chart.data.datasets.push(data);
+      chart.update();
+  }
+  
+  addChartButton.addEventListener('click', e => {
+    
+    // проверка, использовано ли уже имя графика
+    for (let i = 0; i < myRadarChart.data.datasets.length; i++) {
+      if (myRadarChart.data.datasets[i].label === chartName.value) {
+        addChartButton.insertAdjacentHTML('afterend', '<p id="warning" style="color:red">Такое имя уже есть.</p>');
+        chartName.value = '';
+      }
+    }
+    
+    if ( chartName.value !== '' && aimName.value !== '' ) {
+      
+      if (document.getElementById('warning')) {
+        document.getElementById('warning').remove();
+      }
+      
+      let color = randomColor({
+        format: 'rgba',
+        alpha: 0.2
+      });
+      let borderCol = color.replace('0.2', '1');
+      
+      addData(myRadarChart, {
+        label: chartName.value,
+        data: [0, 0, 0, 0, 0],
+        backgroundColor: color,
+        borderColor: borderCol
+        });
+      
+      chartField.insertAdjacentHTML('beforeend' ,`<div class="chart ${chartName.value}">
+                                <h2>${chartName.value} позиционирование <span id="${chartName.value}-count">${counter}</span></h2>
+                                  <hr style="width:90px;height: 6px; background:${borderCol};display:inline-block;margin-left:10px">
+                                  <div class="chart-values">
+                                  <p><span>Целевая установка</span> <span>"${aimName.value}"</span></p>
+                                  <p><span>Автономность</span> <span><input id="${chartName.value}-label-value1" type="number"></span></p>
+                                  <p><span>Приключения</span> <span><input id="${chartName.value}-label-value2" type="number"></span></p>
+                                  <p><span>Возбуджение</span> <span><input id="${chartName.value}-label-value3" type="number"></span></p>
+                                  <p><span>Удовольствие</span> <span><input id="${chartName.value}-label-value4" type="number"></span></p>
+                                  <p><span>Безопасность</span> <span><input id="${chartName.value}-label-value5" type="number"></span></p>
+                                  <p><span>Дисциплина</span> <span><input id="${chartName.value}-label-value6" type="number"></span></p>
+                                  </div>
+                                </div>`);
+      
+      addEventsOnInputs(chartName.value);
+      counter++;
+      chartName.value = '';
+      aimName.value = '';
+    }
+    
+  });
+  
+  
+  deleteChartButton.addEventListener('click', _ => {
+    if (chartNameDel.value !== '') {
+      
+      for (let i = 0; i < myRadarChart.data.datasets.length; i++) {
+        if (myRadarChart.data.datasets[i].label.toLowerCase() === chartNameDel.value.toLowerCase()) {
+          document.getElementsByClassName(myRadarChart.data.datasets[i].label)[0].remove();
+          myRadarChart.data.datasets.splice(i, 1);
+          for (let j = 0; j < myRadarChart.data.datasets.length; j++) {
+            document.getElementById(`${myRadarChart.data.datasets[j].label}-count`).innerHTML = j+1;
+            counter = j+2;
+          }
+          myRadarChart.update();
+          
+        }
+      }
+    }
+    chartNameDel.value = '';
+  });
+  
+  deleteAllChartsButton.addEventListener('click', _ => {
+      
+      for (let i = 0; i < myRadarChart.data.datasets.length; i++) {
+        document.getElementsByClassName(myRadarChart.data.datasets[i].label)[0].remove();
+      }
+      removeData(myRadarChart);
+      counter = 1;
+    });
+
+    function removeData(chart) {
+        chart.data.datasets = [];
+        chart.update();
+    }
+    
+    
+    function addEventsOnInputs(chartNameValue) {
+      let numOfChart = 0;
+      for (let i = 0; i < myRadarChart.data.datasets.length; i++) {
+        if (myRadarChart.data.datasets[i].label === chartNameValue) {
+          numOfChart = i;
+        }
+      }
+      
+      let labelsValues1 = document.getElementById(`${chartNameValue}-label-value1`);
+      let labelsValues2 = document.getElementById(`${chartNameValue}-label-value2`);
+      let labelsValues3 = document.getElementById(`${chartNameValue}-label-value3`);
+      let labelsValues4 = document.getElementById(`${chartNameValue}-label-value4`);
+      let labelsValues5 = document.getElementById(`${chartNameValue}-label-value5`);
+      let labelsValues6 = document.getElementById(`${chartNameValue}-label-value6`);
+      
+      
+      
+      labelsValues1.addEventListener('input', _ => {
+        myRadarChart.data.datasets[numOfChart].data[0] = parseInt(labelsValues1.value);
+        myRadarChart.update();
+      });
+      labelsValues2.addEventListener('input', _ => {
+        myRadarChart.data.datasets[numOfChart].data[1] = parseInt(labelsValues2.value);
+        myRadarChart.update();
+      });
+      labelsValues3.addEventListener('input', _ => {
+        myRadarChart.data.datasets[numOfChart].data[2] = parseInt(labelsValues3.value);
+        myRadarChart.update();
+      });
+      labelsValues4.addEventListener('input', _ => {
+        myRadarChart.data.datasets[numOfChart].data[3] = parseInt(labelsValues4.value);
+        myRadarChart.update();
+      });  
+      labelsValues5.addEventListener('input',  _ => {
+        myRadarChart.data.datasets[numOfChart].data[4] = parseInt(labelsValues5.value);
+        myRadarChart.update();
+      });
+      labelsValues6.addEventListener('input', _ => {
+        myRadarChart.data.datasets[numOfChart].data[5] = parseInt(labelsValues6.value);
+        myRadarChart.update();
+      });
+    }
+  </script>
+</body>
+</html>

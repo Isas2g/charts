@@ -1,0 +1,18 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+div {
+  max-width: 600px;
+  margin: 0 auto;
+}
+.panel {
+  display: flex;
+  max-width: 1000px;
+}
+#myChart {
+}
+form {
+  
+}
